@@ -44,23 +44,29 @@ class HigherPlane {
 
     this.hpDiv = document.createElement("div");
     this.hpDiv.id = 'higherPlane';
+    this.hpDiv.tabIndex = -1; // make it focusable
+
+    // make sure that we can give the host focus as well
+    if(this.host.tabIndex == 0) {
+      this.host.tabIndex = -1;
+    }
 
     this.hpDiv.style.border = this.borderWidth + "px dotted orangered";
     this.hpDiv.style.position = 'fixed';
-    this.hpDiv.style.cursor = 'auto';
-    // this.hpDiv.style.setProperty('pointer-events', 'none');
-    
     this.hpDiv.style.display = this.display;
 
     this.resize();
 
     // mouse events
     this.hpDiv.addEventListener("wheel", (e) => { this.handleScrollWheel(e); });
-
-    this.hpDiv.addEventListener("click", (e)  => { this.handleMouseEvent(e); });
+    this.hpDiv.addEventListener("click", (e) => { this.handleMouseEvent(e); });
     this.hpDiv.addEventListener("mousemove", (e) => { this.handleMouseEvent(e); });
     this.hpDiv.addEventListener("mousedown", (e) => { this.handleMouseEvent(e); });
     this.hpDiv.addEventListener("mouseup", (e) => { this.handleMouseEvent(e); });
+
+    // key events $$$ Why is this not work???
+    this.hpDiv.addEventListener("keydown", (e) => { this.handleKeys(e); });
+    this.hpDiv.addEventListener("keyup", (e) => { this.handleKeys(e); });
 
     // add the div into the DOM
     document.getElementsByTagName('body')[0].appendChild(this.hpDiv);
@@ -75,7 +81,7 @@ class HigherPlane {
     else {
       this.hpDiv.style.display = 'none';
     }
-      
+
   }
 
   resize() {
@@ -93,41 +99,56 @@ class HigherPlane {
     return true;
   }
 
-  handleScrollKeys(e) {
+  handleKeys(e) {
     if (this.hpDiv.style.display == 'none') {
       console.log(this.host.scrollTop);
       return true;
     }
-    if (e.keyCode === 33)              // page up
-      this.host.scrollTop -= this.host.offsetHeight * 0.9;
-    else if (e.keyCode === 34)         // page down
-      this.host.scrollTop += this.host.offsetHeight * 0.9;
-    else if (e.keyCode === 35)         // end
-      this.host.scrollTop = this.host.scrollHeight;  // we need the right number
-    else if (e.keyCode === 36)         // home
-      this.host.scrollTop = 0;
-    else if (e.keyCode === 38)         // up arrow
-      this.host.scrollTop -= 86;      // we need the right number
-    else if (e.keyCode === 40)         // down arrow
-      this.host.scrollTop += 86;      // we need the right number
-    return true;
+    if (e.type === 'keydown') {
+      if (e.keyCode === 33)              // page up
+        this.host.scrollTop -= this.host.offsetHeight * 0.9;
+      else if (e.keyCode === 34)         // page down
+        this.host.scrollTop += this.host.offsetHeight * 0.9;
+      else if (e.keyCode === 35)         // end
+        this.host.scrollTop = this.host.scrollHeight;  // we need the right number
+      else if (e.keyCode === 36)         // home
+        this.host.scrollTop = 0;
+      else if (e.keyCode === 38)         // up arrow
+        this.host.scrollTop -= 86;      // we need the right number
+      else if (e.keyCode === 40)         // down arrow
+        this.host.scrollTop += 86;      // we need the right number
+      return true;
+    }
+    else 
+      return this.forwardEvent(e);
   }
 
+
+  // handler of MouseEvents
   handleMouseEvent(e) {
+    // return this.forwardEvent(e); // this below is not working
+    // in case when i click on a clickable element - i don't get the next event
     this.hpDiv.style.setProperty('pointer-events', 'none');
     let underElem = <HTMLElement>document.elementFromPoint(e.clientX, e.clientY);
     let event = new MouseEvent(e.type, e);
     let result = underElem.dispatchEvent(event);
-    this.hpDiv.style.setProperty('pointer-events', 'all');
+    this.hpDiv.style.setProperty('pointer-events', 'auto');
+    this.hpDiv.focus();
+    if (e.type !== 'mousemove')
+      console.log('higher plane: ' + e.type + ' return: ' + result);
   }
 
+  // generic event forwarder
   forwardEvent(e) {
     this.visible(false);
     let underElem = <HTMLElement>document.elementFromPoint(e.clientX, e.clientY);
+    underElem.focus();
     let event = new UIEvent(e.type, e);
     let result = underElem.dispatchEvent(event);
     this.visible(true);
-    console.log('higher plane: ' + e.type + ' return: ' + result);
+    this.hpDiv.focus();
+    if (e.type !== 'mousemove')
+      console.log('higher plane: ' + e.type + ' return: ' + result);
     return result;
   }
 }
