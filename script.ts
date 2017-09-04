@@ -73,12 +73,7 @@ class HigherPlane {
   }
 
   visible(state: boolean) {
-    if (state) {
-      this.hpDiv.style.display = this.display;
-    }
-    else {
-      this.hpDiv.style.display = 'none';
-    }
+      this.hpDiv.style.display = state ? this.display : 'none';
   }
 
   resize() {
