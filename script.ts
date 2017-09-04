@@ -75,7 +75,6 @@ class HigherPlane {
   visible(state: boolean) {
     if (state) {
       this.hpDiv.style.display = this.display;
-      this.resize();
     }
     else {
       this.hpDiv.style.display = 'none';
@@ -166,6 +165,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   $("#hpToggle").addEventListener("click", (e) => {
     higherPlane.visible((<HTMLInputElement>e.target).checked);
+    higherPlane.resize();
   });
   // higher plane is visible
   (<HTMLInputElement>$("#hpToggle")).checked = true;
