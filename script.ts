@@ -122,7 +122,7 @@ class HigherPlane {
     return result;
   }
 
-  // generic event forwarder
+  // event forwarder to the document object
   forwardEvent(e : Event, eventType) {
 
     let underElem = null;
