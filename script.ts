@@ -58,10 +58,11 @@ class HigherPlane {
 
     // mouse events
     this.hpDiv.addEventListener("wheel", (e) => { this.handleScrollWheel(e); });
-    this.hpDiv.addEventListener("click", (e) => { this.handleMouseEvent(e); });
-    this.hpDiv.addEventListener("mousemove", (e) => { this.handleMouseEvent(e); });
-    this.hpDiv.addEventListener("mousedown", (e) => { this.handleMouseEvent(e); });
-    this.hpDiv.addEventListener("mouseup", (e) => { this.handleMouseEvent(e); });
+    
+    this.hpDiv.addEventListener("click", (e) => { this.forwardEvent(e, MouseEvent); });
+    this.hpDiv.addEventListener("mousemove", (e) => { this.forwardEvent(e, MouseEvent); });
+    this.hpDiv.addEventListener("mousedown", (e) => { this.forwardEvent(e, MouseEvent); });
+    this.hpDiv.addEventListener("mouseup", (e) => { this.forwardEvent(e, MouseEvent); });
 
     // key events 
     this.hpDiv.addEventListener("keydown", (e) => { this.handleKeys(e); });
@@ -115,45 +116,41 @@ class HigherPlane {
       result = true;
     }
     else 
-      result = this.forwardEvent(e);
+      result = this.forwardEvent(e, KeyboardEvent);
     
     console.log('handleKeys: ' + e.type + ' return: ' + result);
     return result;
   }
 
-
-  // handler of MouseEvents
-  handleMouseEvent(e : MouseEvent) {
-    this.hpDiv.style.setProperty('pointer-events', 'none');
-    let underElem = <HTMLElement>document.elementFromPoint(e.clientX, e.clientY);
-    let event = new MouseEvent(e.type, e); 
-    let result = underElem.dispatchEvent(event);
-    this.hpDiv.style.setProperty('pointer-events', 'auto');
-    this.hpDiv.focus();
-    if (e.type !== 'mousemove')
-      console.log('handleMouseEvent: ' + e.type + ' return: ' + result);
-  }
-
   // generic event forwarder
-  forwardEvent(e : Event, evtContuctor? : any) {
-    this.visible(false);
+  forwardEvent(e : Event, eventType) {
+
     let underElem = null;
-    if((<MouseEvent>e).clientX === undefined) {
-      underElem = this.host;
-      underElem.focus();
-    }
-    else {
+    
+    if(eventType === MouseEvent) {
+      this.hpDiv.style.setProperty('pointer-events', 'none');
       underElem = <HTMLElement>document.elementFromPoint((<MouseEvent>e).clientX, (<MouseEvent>e).clientY);
     }
-    
-    if(evtContuctor === undefined) evtContuctor = UIEvent;
+    else {
+      this.visible(false);
+      underElem = this.host;
+    }
 
-    let event = new evtContuctor(e.type, e); 
+    underElem.focus();
+    let event = new eventType(e.type, e); 
     let result = underElem.dispatchEvent(event);
-    this.visible(true);
+
+    if(eventType === MouseEvent) {
+      this.hpDiv.style.setProperty('pointer-events', 'auto');
+    }
+    else {
+      this.visible(true);
+    }
     this.hpDiv.focus();
+    
     if (e.type !== 'mousemove')
       console.log('forwardEvent: ' + e.type + ' return: ' + result);
+    
     return result;
   }
 }
