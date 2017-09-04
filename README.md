@@ -7,3 +7,6 @@ This is a local only project. Does not get deployed to any server. Also does not
 2. Run tsc in the directory
 3. Open *index.html* in the your browser (Edge) 
 
+# License
+For testing, I am using Adventures of Sherlock Holmes. This eBook is for the use of anyone anywhere at no cost and with almost no restrictions whatsoever.  You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org/license.
+
