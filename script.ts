@@ -37,7 +37,8 @@ function loadBook(url: string, elem: string): void {
 class HigherPlane {
   private host: HTMLElement;
   private hpDiv: HTMLElement;
-  readonly display : string = 'block';
+  readonly display: string = 'block';   // the default display style of the higher plane
+  readonly borderWidth : number = 3;    // border width - just so we can see it
 
   constructor(name: string) {
 
@@ -46,66 +47,47 @@ class HigherPlane {
     this.hpDiv = document.createElement("div");
     this.hpDiv.id = 'higherPlane';
 
-    let borderWidht = 3;
-    this.hpDiv.style.border = borderWidht + "px dotted orangered";
+    this.hpDiv.style.border = this.borderWidth + "px dotted orangered";
     this.hpDiv.style.position = 'fixed';
-    this.hpDiv.style.display = 'block';
-    this.hpDiv.style.left = this.host.offsetLeft - borderWidht + 'px';
-    this.hpDiv.style.top = this.host.offsetTop + 'px';
-    this.hpDiv.style.width = this.host.offsetWidth + 'px';
-    this.hpDiv.style.height = this.host.offsetHeight - borderWidht + 'px';
+    this.hpDiv.style.display = this.display;
+    
+    this.resize(null);
 
-    this.hpDiv.addEventListener("wheel", (e) => { this.passEvent(e); });
+    this.hpDiv.addEventListener("wheel", (e) => { this.handleScroll(e); });
     this.hpDiv.addEventListener("click", (e) => { this.passEvent(e); });
     this.hpDiv.addEventListener("keydown", (e) => { this.passEvent(e); });
     this.hpDiv.addEventListener("keyup", (e) => { this.passEvent(e); });
     this.hpDiv.addEventListener("beforeinput", (e) => { this.passEvent(e); });
     this.hpDiv.addEventListener("input", (e) => { this.passEvent(e); });
+    this.hpDiv.addEventListener("mousemove", (e) => { this.passEvent(e); });
+    this.hpDiv.addEventListener("mousedown", (e) => { this.passEvent(e); });
+    this.hpDiv.addEventListener("mouseup", (e) => { this.passEvent(e); });
 
     document.getElementsByTagName('body')[0].appendChild(this.hpDiv);
   }
 
-  visible(state : boolean) {
-    if(state == false) {
-      this.hpDiv.style.display = 'none';
-    }
-    else 
-      this.hpDiv.style.display = this.display;
+  visible(state: boolean) {
+    this.hpDiv.style.display = state == false ? 'none' : this.display;
   }
+
+  resize(e : Event) {
+    this.hpDiv.style.left = this.host.offsetLeft - this.borderWidth + 'px';
+    this.hpDiv.style.top = this.host.offsetTop + 'px';
+    this.hpDiv.style.width = this.host.offsetWidth + 'px';
+    this.hpDiv.style.height = this.host.offsetHeight - this.borderWidth + 'px';
+  } 
 
   handleScroll(e) {
     this.host.scrollTop += e.deltaY;
   }
 
   passEvent(e) {
-    let s = this.hpDiv.style.display;
-    this.hpDiv.style.display = 'none';
+    this.visible(false);
     let underElem = <HTMLElement>document.elementFromPoint(e.clientX, e.clientY);
-    // let underElem = this.host;
-    
-    // let event = new MouseEvent("click", {
-    //   bubbles: true,
-    //   cancelable: true,
-    //   clientX: e.clientX,
-    //   clientY: e.clientY,
-    // });
-
-    if(event.type == 'wheel') {
-      console.log(e.deltaY);
-        event = new WheelEvent(e.type, e);
-    }
-    else {
-      event = new UIEvent(e.type, e);
-    }
-
-    // e.target = underElem;
-    underElem.dispatchEvent(event);
-
-    if(s)
-      this.hpDiv.style.display = s; 
-    else 
-      this.hpDiv.style.display = ''; 
-    return false;
+    let event = new UIEvent(e.type, e);
+    let result = underElem.dispatchEvent(event);
+    this.visible(true);
+    return result;
   }
 }
 
@@ -114,10 +96,19 @@ class HigherPlane {
 // -----------------------------------------------------------------------------------
 var higherPlane;
 document.addEventListener("DOMContentLoaded", function () {
+  
+  // make a higher plane
   higherPlane = new HigherPlane("#content");
-  $("#hpToggle").addEventListener("click", (e)=>{
+  
+  $("#hpToggle").addEventListener("click", (e) => {
     higherPlane.visible((<HTMLInputElement>e.target).checked);
   });
+
+  window.addEventListener("resize", (e)=>{
+    higherPlane.resize(e);
+  });
+
+  // load the text
   loadBook('./SherlockShort.html', '#content');
 });
 
