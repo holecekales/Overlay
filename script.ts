@@ -61,6 +61,7 @@ class HigherPlane {
     
     this.hpDiv.addEventListener("click", (e) => { this.forwardEvent(e, MouseEvent); });
     this.hpDiv.addEventListener("mousemove", (e) => { this.forwardEvent(e, MouseEvent); });
+    this.hpDiv.addEventListener("mouseover", (e) => { this.forwardEvent(e, MouseEvent); });
     this.hpDiv.addEventListener("mousedown", (e) => { this.forwardEvent(e, MouseEvent); });
     this.hpDiv.addEventListener("mouseup", (e) => { this.forwardEvent(e, MouseEvent); });
 
@@ -124,6 +125,8 @@ class HigherPlane {
     if(eventType === MouseEvent) {
       this.hpDiv.style.setProperty('pointer-events', 'none');
       underElem = <HTMLElement>document.elementFromPoint((<MouseEvent>e).clientX, (<MouseEvent>e).clientY);
+      // if(e.type === 'mouseover') // this is still not working right
+      //   this.hpDiv.style.cursor = underElem.style.cursor;
     }
     else {
       this.visible(false);
