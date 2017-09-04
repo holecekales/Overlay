@@ -41,15 +41,14 @@ class HigherPlane {
   constructor(name: string) {
 
     this.host = $(name);
-
-    this.hpDiv = document.createElement("div");
-    this.hpDiv.id = 'higherPlane';
-    this.hpDiv.tabIndex = -1; // make it focusable
-
-    // make sure that we can give the host focus as well
+    // trying to make the host focusable // $$$ does not work as expected 
     if(this.host.tabIndex == 0) {
       this.host.tabIndex = -1;
     }
+  
+    this.hpDiv = document.createElement("div");
+    this.hpDiv.id = 'higherPlane';
+    this.hpDiv.tabIndex = -1; // make it focusable
 
     this.hpDiv.style.border = this.borderWidth + "px dotted orangered";
     this.hpDiv.style.position = 'fixed';
@@ -64,13 +63,12 @@ class HigherPlane {
     this.hpDiv.addEventListener("mousedown", (e) => { this.handleMouseEvent(e); });
     this.hpDiv.addEventListener("mouseup", (e) => { this.handleMouseEvent(e); });
 
-    // key events $$$ Why is this not work???
+    // key events 
     this.hpDiv.addEventListener("keydown", (e) => { this.handleKeys(e); });
     this.hpDiv.addEventListener("keyup", (e) => { this.handleKeys(e); });
 
     // add the div into the DOM
     document.getElementsByTagName('body')[0].appendChild(this.hpDiv);
-    // this.host.appendChild(this.hpDiv);
   }
 
   visible(state: boolean) {
@@ -81,13 +79,11 @@ class HigherPlane {
     else {
       this.hpDiv.style.display = 'none';
     }
-
   }
 
   resize() {
     if (this.hpDiv.style.display == 'none')
       return;
-
     this.hpDiv.style.left = this.host.offsetLeft - this.borderWidth + 'px';
     this.hpDiv.style.top = this.host.offsetTop + 'px';
     this.hpDiv.style.width = this.host.offsetWidth + 'px';
@@ -100,10 +96,9 @@ class HigherPlane {
   }
 
   handleKeys(e) {
-    if (this.hpDiv.style.display == 'none') {
-      console.log(this.host.scrollTop);
-      return true;
-    }
+
+    let result: boolean = false;
+
     if (e.type === 'keydown') {
       if (e.keyCode === 33)              // page up
         this.host.scrollTop -= this.host.offsetHeight * 0.9;
@@ -117,38 +112,48 @@ class HigherPlane {
         this.host.scrollTop -= 86;      // we need the right number
       else if (e.keyCode === 40)         // down arrow
         this.host.scrollTop += 86;      // we need the right number
-      return true;
+      result = true;
     }
     else 
-      return this.forwardEvent(e);
+      result = this.forwardEvent(e);
+    
+    console.log('handleKeys: ' + e.type + ' return: ' + result);
+    return result;
   }
 
 
   // handler of MouseEvents
-  handleMouseEvent(e) {
-    // return this.forwardEvent(e); // this below is not working
-    // in case when i click on a clickable element - i don't get the next event
+  handleMouseEvent(e : MouseEvent) {
     this.hpDiv.style.setProperty('pointer-events', 'none');
     let underElem = <HTMLElement>document.elementFromPoint(e.clientX, e.clientY);
-    let event = new MouseEvent(e.type, e);
+    let event = new MouseEvent(e.type, e); 
     let result = underElem.dispatchEvent(event);
     this.hpDiv.style.setProperty('pointer-events', 'auto');
     this.hpDiv.focus();
     if (e.type !== 'mousemove')
-      console.log('higher plane: ' + e.type + ' return: ' + result);
+      console.log('handleMouseEvent: ' + e.type + ' return: ' + result);
   }
 
   // generic event forwarder
-  forwardEvent(e) {
+  forwardEvent(e : Event, evtContuctor? : any) {
     this.visible(false);
-    let underElem = <HTMLElement>document.elementFromPoint(e.clientX, e.clientY);
-    underElem.focus();
-    let event = new UIEvent(e.type, e);
+    let underElem = null;
+    if((<MouseEvent>e).clientX === undefined) {
+      underElem = this.host;
+      underElem.focus();
+    }
+    else {
+      underElem = <HTMLElement>document.elementFromPoint((<MouseEvent>e).clientX, (<MouseEvent>e).clientY);
+    }
+    
+    if(evtContuctor === undefined) evtContuctor = UIEvent;
+
+    let event = new evtContuctor(e.type, e); 
     let result = underElem.dispatchEvent(event);
     this.visible(true);
     this.hpDiv.focus();
     if (e.type !== 'mousemove')
-      console.log('higher plane: ' + e.type + ' return: ' + result);
+      console.log('forwardEvent: ' + e.type + ' return: ' + result);
     return result;
   }
 }
