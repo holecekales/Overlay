@@ -39,14 +39,10 @@ class HigherPlane {
   private readonly borderWidth: number = 3;    // border width - just so we can see it
 
 
-  constructor(name: string) {
+  constructor(docCanvas: HTMLElement) {
 
-    this.doc = $(name);
-    // trying to make the host focusable // $$$ does not work as expected 
-    if (this.doc.tabIndex == 0) {
-      this.doc.tabIndex = -1;
-    }
-
+    this.doc = docCanvas;
+  
     this.hpDiv = document.createElement("div");
     this.hpDiv.id = 'higherPlane';
     this.hpDiv.tabIndex = -1; // make it focusable
@@ -57,9 +53,14 @@ class HigherPlane {
     this.resize();
     this.active(false);
 
-    // register the host for all events ()
+    // register all the events. At least for now :)
     this.doc.addEventListener('wheel', (e) => { this.handleInputEvent(e) });
     this.doc.addEventListener("click", (e) => { this.handleInputEvent(e); });
+
+    this.doc.addEventListener("keydown", (e) => { this.handleInputEvent(e); });
+    this.doc.addEventListener("keyup", (e) => { this.handleInputEvent(e); });
+    this.doc.addEventListener("scroll", (e) => { this.handleInputEvent(e); });
+    
     this.doc.addEventListener("pointerdown", (e) => { this.docPtrHandler(e); });
     this.doc.addEventListener("pointerup", (e) => { this.docPtrHandler(e); });
     this.doc.addEventListener("pointermove", (e) => { this.docPtrHandler(e); });
@@ -73,18 +74,17 @@ class HigherPlane {
     this.hpDiv.addEventListener("pointerover", (e) => { this.hpPtrHandler(e); });
     this.hpDiv.addEventListener("gotpointercapture", (e) => { this.hpPtrHandler(e); });
     this.hpDiv.addEventListener("lostpointercapture", (e) => { this.hpPtrHandler(e); });
-
-
-    this.doc.addEventListener("keydown", (e) => { this.handleInputEvent(e); });
-    this.doc.addEventListener("keyup", (e) => { this.handleInputEvent(e); });
-    this.doc.addEventListener("scroll", (e) => { this.handleInputEvent(e); });
-
+    
     // add the div into the DOM
     document.getElementsByTagName('body')[0].appendChild(this.hpDiv);
   }
 
   visible(state: boolean) {
     this.hpDiv.style.display = state ? this.display : 'none';
+  }
+
+  isVisible() : boolean {
+    return this.hpDiv.style.display === this.display;
   }
 
   active(state : boolean) {
@@ -111,10 +111,9 @@ class HigherPlane {
     elem.dispatchEvent(event);
   }
 
+  // HigherPlane - handle pointer events
   hpPtrHandler(e: PointerEvent) {
-
     console.log("HP Event: " + e.type + " PtrID: " + e.pointerId);
-
     if (e.pointerType === 'pen') {
       if (e.type === 'pointerup') {
         this.active(false);
@@ -124,15 +123,17 @@ class HigherPlane {
       if (e.type === 'pointerdown') {
 
       }
+      if(e.type === 'pointermove') {
+        console.log('HP Pen Moved CX='+ e.clientX+ ', CY='+e.clientY);
+      }
     }
   }
 
+  // document canvas handle pointer events
   docPtrHandler(e: PointerEvent) {
-
     console.log("Text Event: " + e.type + " PtrID: " + e.pointerId);
-
     if (e.pointerType === 'pen') {
-      if (e.type === 'pointerdown') {
+      if (e.type === 'pointerdown' && this.isVisible()) {
         this.forwardPointerEvent(e, this.hpDiv);
         this.active(true);
         e.preventDefault();
@@ -142,6 +143,9 @@ class HigherPlane {
     }
   }
 
+  // this is to handle various events on the document
+  // when more done - we will also have to do stuff on 
+  // the HigherPlane
   handleInputEvent(e: UIEvent) {
     console.log("Object Event: " + e.type);
   }
@@ -163,15 +167,15 @@ var higherPlane;
 document.addEventListener("DOMContentLoaded", function () {
 
   // make a higher plane
-  higherPlane = new HigherPlane("#content");
+  higherPlane = new HigherPlane($("#content"));
 
+  // higher plane is visible
+  (<HTMLInputElement>$("#hpToggle")).checked = true;
   $("#hpToggle").addEventListener("click", (e) => {
     higherPlane.visible((<HTMLInputElement>e.target).checked);
     higherPlane.resize();
   });
-  // higher plane is visible
-  (<HTMLInputElement>$("#hpToggle")).checked = true;
-
+  
   // make sure that the windows resizes
   window.addEventListener("resize", (e) => {
     higherPlane.resize();
