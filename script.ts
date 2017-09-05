@@ -172,7 +172,8 @@ class HigherPlane {
   // when more done - we will also have to do stuff on 
   // the HigherPlane
   handleInputEvent(e: UIEvent) {
-    // console.log("Object Event: " + e.type);
+    if(e.type == 'scroll')
+      this.canvasRedraw();
   }
 
   resize() {
@@ -196,7 +197,7 @@ class HigherPlane {
   addStrokePoint(e: PointerEvent, ptType: number) {
     let ptX = e.clientX - this.hpDiv.offsetLeft;
     let ptY = e.clientY - this.hpDiv.offsetTop;
-    this.stroke.push({ x: ptX, y: ptY, type: ptType });
+    this.stroke.push({ x: ptX, y: ptY+this.doc.scrollTop, type: ptType });
     if (ptType === 0) {
       this.hpCtx.strokeStyle = '#9131cc';
       this.hpCtx.lineJoin = "round";
@@ -235,15 +236,15 @@ class HigherPlane {
         this.hpCtx.lineWidth = 3;
 
         this.hpCtx.beginPath();
-        this.hpCtx.moveTo(this.stroke[i].x, this.stroke[i].y);
+        this.hpCtx.moveTo(this.stroke[i].x, this.stroke[i].y-this.doc.scrollTop);
       }
 
       if (this.stroke[i].type === 1) {
-        this.hpCtx.lineTo(this.stroke[i].x, this.stroke[i].y);
+        this.hpCtx.lineTo(this.stroke[i].x, this.stroke[i].y-this.doc.scrollTop);
       }
 
       if (this.stroke[i].type === 2 || (this.stroke[i].type === 1 && i == last-1)) {
-        this.hpCtx.lineTo(this.stroke[i].x, this.stroke[i].y);
+        this.hpCtx.lineTo(this.stroke[i].x, this.stroke[i].y-this.doc.scrollTop);
         this.hpCtx.stroke();
       }
     }
