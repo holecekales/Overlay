@@ -12,9 +12,6 @@ function scrollToView(id: string): void {
   }
 }
 
-// -----------------------------------------------------------------------------------
-// loadBook (for local content and no server doesn't work in Chrome) 
-// -----------------------------------------------------------------------------------
 function loadBook(url: string, elem: string): void {
   let con = $(elem);
   let xhr = new XMLHttpRequest();
@@ -28,21 +25,36 @@ function loadBook(url: string, elem: string): void {
   xhr.send();
 }
 
+// -----------------------------------------------------------------------------------
+// Interface IPoint2d
+// -----------------------------------------------------------------------------------
+interface IPoint2d {
+  x: number;
+  y: number;
+}
+
+interface IStrokePoint extends IPoint2d {
+  type: number;  // 0 == moveTo; 1 == lineTo; 2 == last one 
+}
 
 // -----------------------------------------------------------------------------------
 // HigherPlane class
 // -----------------------------------------------------------------------------------
 class HigherPlane {
-  private doc: HTMLElement;
-  private hpDiv: HTMLElement;
   private readonly display: string = 'block';   // the default display style of the higher plane
   private readonly borderWidth: number = 3;    // border width - just so we can see it
 
+  private doc: HTMLElement;
+  private hpDiv: HTMLElement;
+  private hpCanvas: HTMLCanvasElement;
+  private hpCtx: CanvasRenderingContext2D;
+
+  private stroke: IStrokePoint[] = [];
 
   constructor(docCanvas: HTMLElement) {
 
     this.doc = docCanvas;
-  
+
     this.hpDiv = document.createElement("div");
     this.hpDiv.id = 'higherPlane';
     this.hpDiv.tabIndex = -1; // make it focusable
@@ -50,7 +62,6 @@ class HigherPlane {
     this.hpDiv.style.position = 'fixed';
     this.hpDiv.style.display = this.display;
 
-    this.resize();
     this.active(false);
 
     // register all the events. At least for now :)
@@ -60,7 +71,7 @@ class HigherPlane {
     this.doc.addEventListener("keydown", (e) => { this.handleInputEvent(e); });
     this.doc.addEventListener("keyup", (e) => { this.handleInputEvent(e); });
     this.doc.addEventListener("scroll", (e) => { this.handleInputEvent(e); });
-    
+
     this.doc.addEventListener("pointerdown", (e) => { this.docPtrHandler(e); });
     this.doc.addEventListener("pointerup", (e) => { this.docPtrHandler(e); });
     this.doc.addEventListener("pointermove", (e) => { this.docPtrHandler(e); });
@@ -74,21 +85,34 @@ class HigherPlane {
     this.hpDiv.addEventListener("pointerover", (e) => { this.hpPtrHandler(e); });
     this.hpDiv.addEventListener("gotpointercapture", (e) => { this.hpPtrHandler(e); });
     this.hpDiv.addEventListener("lostpointercapture", (e) => { this.hpPtrHandler(e); });
-    
+
     // add the div into the DOM
     document.getElementsByTagName('body')[0].appendChild(this.hpDiv);
+
+    // now create the HTML canvas
+    this.hpCanvas = document.createElement('canvas');
+    this.hpCanvas.id = 'hpCanvas';
+    this.hpCanvas.width = 100;
+    this.hpCanvas.height = 100;
+    this.hpCanvas.style.position = "absolute";
+    this.hpCanvas.style.border = "1px solid #19cdfa";
+    this.hpCtx = this.hpCanvas.getContext("2d");
+    this.hpDiv.appendChild(this.hpCanvas);
+
+    // resize everything to match the content
+    this.resize();
   }
 
   visible(state: boolean) {
     this.hpDiv.style.display = state ? this.display : 'none';
   }
 
-  isVisible() : boolean {
+  isVisible(): boolean {
     return this.hpDiv.style.display === this.display;
   }
 
-  active(state : boolean) {
-    if(state) {
+  active(state: boolean) {
+    if (state) {
       this.hpDiv.style.setProperty('pointer-events', 'auto');
       this.hpDiv.style.border = this.borderWidth + "px dotted orangered";
     }
@@ -113,25 +137,30 @@ class HigherPlane {
 
   // HigherPlane - handle pointer events
   hpPtrHandler(e: PointerEvent) {
-    console.log("HP Event: " + e.type + " PtrID: " + e.pointerId);
+    // console.log("HP Event: " + e.type + " PtrID: " + e.pointerId);
     if (e.pointerType === 'pen') {
       if (e.type === 'pointerup') {
+        this.addStrokePoint(e, 2);
+
+        // $$$ this does not belong here!!
+        this.canvasRedraw();
+
         this.active(false);
         this.forwardPointerEvent(e, this.doc);
         e.preventDefault();
       }
       if (e.type === 'pointerdown') {
-
+        this.addStrokePoint(e, 0);
       }
-      if(e.type === 'pointermove') {
-        console.log('HP Pen Moved CX='+ e.clientX+ ', CY='+e.clientY);
+      if (e.type === 'pointermove') {
+        this.addStrokePoint(e, 1);
       }
     }
   }
 
   // document canvas handle pointer events
   docPtrHandler(e: PointerEvent) {
-    console.log("Text Event: " + e.type + " PtrID: " + e.pointerId);
+    // console.log("Text Event: " + e.type + " PtrID: " + e.pointerId);
     if (e.pointerType === 'pen') {
       if (e.type === 'pointerdown' && this.isVisible()) {
         this.forwardPointerEvent(e, this.hpDiv);
@@ -147,7 +176,7 @@ class HigherPlane {
   // when more done - we will also have to do stuff on 
   // the HigherPlane
   handleInputEvent(e: UIEvent) {
-    console.log("Object Event: " + e.type);
+    // console.log("Object Event: " + e.type);
   }
 
   resize() {
@@ -156,6 +185,68 @@ class HigherPlane {
       this.hpDiv.style.top = this.doc.offsetTop + 'px';
       this.hpDiv.style.width = this.doc.offsetWidth + 'px';
       this.hpDiv.style.height = this.doc.offsetHeight - this.borderWidth + 'px';
+
+      // resize the HTML canvas as well
+      // we should probably cache the scrollbar width;
+      let w1 = parseInt(window.getComputedStyle(this.doc, null).borderLeftWidth);
+      let w2 = parseInt(window.getComputedStyle(this.doc, null).borderRightWidth);
+      let scrollbarWidth = this.doc.offsetWidth - this.doc.clientWidth - w1 - w2;
+      this.hpCanvas.width = this.hpDiv.clientWidth - scrollbarWidth;
+      this.hpCanvas.height = this.hpDiv.clientHeight;
+      this.canvasRedraw();
+    }
+  }
+
+  addStrokePoint(e: PointerEvent, ptType: number) {
+    let ptX = e.clientX - this.hpDiv.offsetLeft;
+    let ptY = e.clientY - this.hpDiv.offsetTop;
+    this.stroke.push({ x: ptX, y: ptY, type: ptType });
+
+    if (ptType === 0) {
+      this.hpCtx.strokeStyle = '#9131cc';
+      this.hpCtx.lineJoin = "round";
+      this.hpCtx.lineWidth = 3;
+  
+      this.hpCtx.beginPath();
+      let ptY = e.clientY - this.hpDiv.offsetTop;
+      this.hpCtx.moveTo(ptX, ptY);
+    }
+
+    if (ptType === 1) {
+      this.hpCtx.lineTo(ptX, ptY);
+      this.hpCtx.stroke();
+    }
+
+    if (ptType === 2) {
+      this.hpCtx.lineTo(ptX, ptY);
+      this.hpCtx.stroke();
+    }
+
+
+  }
+
+  canvasRedraw() {
+    this.hpCtx.clearRect(0, 0, this.hpCtx.canvas.width, this.hpCtx.canvas.height); // Clears the canvas
+    let last = this.stroke.length;
+
+    for (let i = 0; i < last; i++) {
+      if (this.stroke[i].type === 0) {
+        this.hpCtx.strokeStyle = '#9131cc';
+        this.hpCtx.lineJoin = "round";
+        this.hpCtx.lineWidth = 3;
+
+        this.hpCtx.beginPath();
+        this.hpCtx.moveTo(this.stroke[i].x, this.stroke[i].y);
+      }
+
+      if (this.stroke[i].type === 1) {
+        this.hpCtx.lineTo(this.stroke[i].x, this.stroke[i].y);
+      }
+
+      if (this.stroke[i].type === 2) {
+        this.hpCtx.lineTo(this.stroke[i].x, this.stroke[i].y);
+        this.hpCtx.stroke();
+      }
     }
   }
 }
@@ -175,7 +266,7 @@ document.addEventListener("DOMContentLoaded", function () {
     higherPlane.visible((<HTMLInputElement>e.target).checked);
     higherPlane.resize();
   });
-  
+
   // make sure that the windows resizes
   window.addEventListener("resize", (e) => {
     higherPlane.resize();
