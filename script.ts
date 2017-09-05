@@ -141,10 +141,6 @@ class HigherPlane {
     if (e.pointerType === 'pen') {
       if (e.type === 'pointerup') {
         this.addStrokePoint(e, 2);
-
-        // $$$ this does not belong here!!
-        this.canvasRedraw();
-
         this.active(false);
         this.forwardPointerEvent(e, this.doc);
         e.preventDefault();
@@ -201,7 +197,6 @@ class HigherPlane {
     let ptX = e.clientX - this.hpDiv.offsetLeft;
     let ptY = e.clientY - this.hpDiv.offsetTop;
     this.stroke.push({ x: ptX, y: ptY, type: ptType });
-
     if (ptType === 0) {
       this.hpCtx.strokeStyle = '#9131cc';
       this.hpCtx.lineJoin = "round";
@@ -214,12 +209,16 @@ class HigherPlane {
 
     if (ptType === 1) {
       this.hpCtx.lineTo(ptX, ptY);
-      this.hpCtx.stroke();
+      // to avoid jagies, i need to redraw the entire canvas
+      // this.hpCtx.stroke(); 
+      this.canvasRedraw();
     }
 
     if (ptType === 2) {
       this.hpCtx.lineTo(ptX, ptY);
       this.hpCtx.stroke();
+      // $$$ This does not belong here
+      this.canvasRedraw();
     }
 
 
@@ -243,7 +242,7 @@ class HigherPlane {
         this.hpCtx.lineTo(this.stroke[i].x, this.stroke[i].y);
       }
 
-      if (this.stroke[i].type === 2) {
+      if (this.stroke[i].type === 2 || (this.stroke[i].type === 1 && i == last-1)) {
         this.hpCtx.lineTo(this.stroke[i].x, this.stroke[i].y);
         this.hpCtx.stroke();
       }
