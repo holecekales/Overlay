@@ -8,7 +8,10 @@
       overflow: hidden;
     }
 
-    div:focus { outline-style: none; -moz-outline-style:none; }
+    div:focus {
+      outline-style: none;
+      -moz-outline-style: none;
+    }
 
     div.toc {
       margin-left: 3%;
@@ -35,6 +38,15 @@
       left: 0;
     }
 
+    .unselectable {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
     #content {
       padding-left: 5%;
       padding-right: 5%;
@@ -54,19 +66,19 @@
 
       background-color: white;
     }
+
     #hpToggle {
       margin: 10px;
     }
-
   </style>
 
   <script src="script.js"></script>
 </head>
 
 <body>
-  
+
   <div id="host">
-      <input id="hpToggle" type="checkbox">
+    <input id="hpToggle" type="checkbox">
     <div id="content"></div>
   </div>
 </body>

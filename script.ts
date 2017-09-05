@@ -33,122 +33,126 @@ function loadBook(url: string, elem: string): void {
 // HigherPlane class
 // -----------------------------------------------------------------------------------
 class HigherPlane {
-  private host: HTMLElement;
+  private doc: HTMLElement;
   private hpDiv: HTMLElement;
   private readonly display: string = 'block';   // the default display style of the higher plane
   private readonly borderWidth: number = 3;    // border width - just so we can see it
 
+
   constructor(name: string) {
 
-    this.host = $(name);
+    this.doc = $(name);
     // trying to make the host focusable // $$$ does not work as expected 
-    if(this.host.tabIndex == 0) {
-      this.host.tabIndex = -1;
+    if (this.doc.tabIndex == 0) {
+      this.doc.tabIndex = -1;
     }
-  
+
     this.hpDiv = document.createElement("div");
     this.hpDiv.id = 'higherPlane';
     this.hpDiv.tabIndex = -1; // make it focusable
 
-    this.hpDiv.style.border = this.borderWidth + "px dotted orangered";
     this.hpDiv.style.position = 'fixed';
     this.hpDiv.style.display = this.display;
 
     this.resize();
+    this.active(false);
 
-    // mouse events
-    this.hpDiv.addEventListener("wheel", (e) => { this.handleScrollWheel(e); });
-    
-    this.hpDiv.addEventListener("click", (e) => { this.forwardEvent(e, MouseEvent); });
-    this.hpDiv.addEventListener("mousemove", (e) => { this.forwardEvent(e, MouseEvent); });
-    this.hpDiv.addEventListener("mouseover", (e) => { this.forwardEvent(e, MouseEvent); });
-    this.hpDiv.addEventListener("mousedown", (e) => { this.forwardEvent(e, MouseEvent); });
-    this.hpDiv.addEventListener("mouseup", (e) => { this.forwardEvent(e, MouseEvent); });
+    // register the host for all events ()
+    this.doc.addEventListener('wheel', (e) => { this.handleInputEvent(e) });
+    this.doc.addEventListener("click", (e) => { this.handleInputEvent(e); });
+    this.doc.addEventListener("pointerdown", (e) => { this.docPtrHandler(e); });
+    this.doc.addEventListener("pointerup", (e) => { this.docPtrHandler(e); });
+    this.doc.addEventListener("pointermove", (e) => { this.docPtrHandler(e); });
+    this.doc.addEventListener("pointerover", (e) => { this.docPtrHandler(e); });
+    this.doc.addEventListener("gotpointercapture", (e) => { this.docPtrHandler(e); });
+    this.doc.addEventListener("lostpointercapture", (e) => { this.docPtrHandler(e); });
 
-    // key events 
-    this.hpDiv.addEventListener("keydown", (e) => { this.handleKeys(e); });
-    this.hpDiv.addEventListener("keyup", (e) => { this.handleKeys(e); });
+    this.hpDiv.addEventListener("pointerdown", (e) => { this.hpPtrHandler(e); });
+    this.hpDiv.addEventListener("pointerup", (e) => { this.hpPtrHandler(e); });
+    this.hpDiv.addEventListener("pointermove", (e) => { this.hpPtrHandler(e); });
+    this.hpDiv.addEventListener("pointerover", (e) => { this.hpPtrHandler(e); });
+    this.hpDiv.addEventListener("gotpointercapture", (e) => { this.hpPtrHandler(e); });
+    this.hpDiv.addEventListener("lostpointercapture", (e) => { this.hpPtrHandler(e); });
+
+
+    this.doc.addEventListener("keydown", (e) => { this.handleInputEvent(e); });
+    this.doc.addEventListener("keyup", (e) => { this.handleInputEvent(e); });
+    this.doc.addEventListener("scroll", (e) => { this.handleInputEvent(e); });
 
     // add the div into the DOM
     document.getElementsByTagName('body')[0].appendChild(this.hpDiv);
   }
 
   visible(state: boolean) {
-      this.hpDiv.style.display = state ? this.display : 'none';
+    this.hpDiv.style.display = state ? this.display : 'none';
+  }
+
+  active(state : boolean) {
+    if(state) {
+      this.hpDiv.style.setProperty('pointer-events', 'auto');
+      this.hpDiv.style.border = this.borderWidth + "px dotted orangered";
+    }
+    else {
+      this.hpDiv.style.setProperty('pointer-events', 'none');
+      this.hpDiv.style.border = this.borderWidth + "px dotted gray";
+    }
+  }
+
+  // PointerEvent forwarder between two elements
+  forwardPointerEvent(e: PointerEvent, elem: HTMLElement) {
+    let event = new PointerEvent(e.type, {
+      bubbles: true,
+      cancelable: true,
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      clientX: e.clientX,
+      clientY: e.clientY
+    });
+    elem.dispatchEvent(event);
+  }
+
+  hpPtrHandler(e: PointerEvent) {
+
+    console.log("HP Event: " + e.type + " PtrID: " + e.pointerId);
+
+    if (e.pointerType === 'pen') {
+      if (e.type === 'pointerup') {
+        this.active(false);
+        this.forwardPointerEvent(e, this.doc);
+        e.preventDefault();
+      }
+      if (e.type === 'pointerdown') {
+
+      }
+    }
+  }
+
+  docPtrHandler(e: PointerEvent) {
+
+    console.log("Text Event: " + e.type + " PtrID: " + e.pointerId);
+
+    if (e.pointerType === 'pen') {
+      if (e.type === 'pointerdown') {
+        this.forwardPointerEvent(e, this.hpDiv);
+        this.active(true);
+        e.preventDefault();
+      }
+      if (e.type === 'pointerup') {
+      }
+    }
+  }
+
+  handleInputEvent(e: UIEvent) {
+    console.log("Object Event: " + e.type);
   }
 
   resize() {
-    if (this.hpDiv.style.display == 'none')
-      return;
-    this.hpDiv.style.left = this.host.offsetLeft - this.borderWidth + 'px';
-    this.hpDiv.style.top = this.host.offsetTop + 'px';
-    this.hpDiv.style.width = this.host.offsetWidth + 'px';
-    this.hpDiv.style.height = this.host.offsetHeight - this.borderWidth + 'px';
-  }
-
-  handleScrollWheel(e) {
-    this.host.scrollTop += e.deltaY;
-    return true;
-  }
-
-  handleKeys(e) {
-
-    let result: boolean = false;
-
-    if (e.type === 'keydown') {
-      if (e.keyCode === 33)              // page up
-        this.host.scrollTop -= this.host.offsetHeight * 0.9;
-      else if (e.keyCode === 34)         // page down
-        this.host.scrollTop += this.host.offsetHeight * 0.9;
-      else if (e.keyCode === 35)         // end
-        this.host.scrollTop = this.host.scrollHeight;  // we need the right number
-      else if (e.keyCode === 36)         // home
-        this.host.scrollTop = 0;
-      else if (e.keyCode === 38)         // up arrow
-        this.host.scrollTop -= 86;      // we need the right number
-      else if (e.keyCode === 40)         // down arrow
-        this.host.scrollTop += 86;      // we need the right number
-      result = true;
+    if (this.hpDiv.style.display !== 'none') {
+      this.hpDiv.style.left = this.doc.offsetLeft - this.borderWidth + 'px';
+      this.hpDiv.style.top = this.doc.offsetTop + 'px';
+      this.hpDiv.style.width = this.doc.offsetWidth + 'px';
+      this.hpDiv.style.height = this.doc.offsetHeight - this.borderWidth + 'px';
     }
-    else 
-      result = this.forwardEvent(e, KeyboardEvent);
-    
-    console.log('handleKeys: ' + e.type + ' return: ' + result);
-    return result;
-  }
-
-  // event forwarder to the document object
-  forwardEvent(e : Event, eventType) {
-
-    let underElem = null;
-    
-    if(eventType === MouseEvent) {
-      this.hpDiv.style.setProperty('pointer-events', 'none');
-      underElem = <HTMLElement>document.elementFromPoint((<MouseEvent>e).clientX, (<MouseEvent>e).clientY);
-      // if(e.type === 'mouseover') // this is still not working right
-      //   this.hpDiv.style.cursor = underElem.style.cursor;
-    }
-    else {
-      this.visible(false);
-      underElem = this.host;
-    }
-
-    underElem.focus();
-    let event = new eventType(e.type, e); 
-    let result = underElem.dispatchEvent(event);
-
-    if(eventType === MouseEvent) {
-      this.hpDiv.style.setProperty('pointer-events', 'auto');
-    }
-    else {
-      this.visible(true);
-    }
-    this.hpDiv.focus();
-    
-    if (e.type !== 'mousemove')
-      console.log('forwardEvent: ' + e.type + ' return: ' + result);
-    
-    return result;
   }
 }
 
