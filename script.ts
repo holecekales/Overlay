@@ -49,6 +49,8 @@ class HigherPlane {
   private hpCanvas: HTMLCanvasElement;
   private hpCtx: CanvasRenderingContext2D;
 
+  public drawWithMouse : boolean = false;
+
   private stroke: IStrokePoint[] = [];
 
   constructor(docCanvas: HTMLElement) {
@@ -59,7 +61,7 @@ class HigherPlane {
     this.hpDiv.id = 'higherPlane';
     this.hpDiv.tabIndex = -1; // make it focusable
 
-    this.hpDiv.style.position = 'fixed';
+    this.hpDiv.style.position = 'absolute';
     this.hpDiv.style.display = this.display;
 
     this.active(false);
@@ -95,7 +97,7 @@ class HigherPlane {
     this.hpCanvas.width = 100;
     this.hpCanvas.height = 100;
     this.hpCanvas.style.position = "absolute";
-    this.hpCanvas.style.border = "1px solid #19cdfa";
+    // this.hpCanvas.style.border = "1px solid #19cdfa";
     this.hpCtx = this.hpCanvas.getContext("2d");
     this.hpDiv.appendChild(this.hpCanvas);
 
@@ -138,7 +140,7 @@ class HigherPlane {
   // HigherPlane - handle pointer events
   hpPtrHandler(e: PointerEvent) {
     // console.log("HP Event: " + e.type + " PtrID: " + e.pointerId);
-    if (e.pointerType === 'pen') {
+    if (e.pointerType === 'pen' || (e.pointerType === 'mouse' && this.drawWithMouse)) {
       if (e.type === 'pointerup') {
         this.addStrokePoint(e, 2);
         this.active(false);
@@ -157,7 +159,7 @@ class HigherPlane {
   // document canvas handle pointer events
   docPtrHandler(e: PointerEvent) {
     // console.log("Text Event: " + e.type + " PtrID: " + e.pointerId);
-    if (e.pointerType === 'pen') {
+    if (e.pointerType === 'pen' || (e.pointerType === 'mouse' && this.drawWithMouse)) {
       if (e.type === 'pointerdown' && this.isVisible()) {
         this.forwardPointerEvent(e, this.hpDiv);
         this.active(true);
@@ -211,8 +213,8 @@ class HigherPlane {
     if (ptType === 1) {
       this.hpCtx.lineTo(ptX, ptY);
       // to avoid jagies, i need to redraw the entire canvas
-      // this.hpCtx.stroke(); 
-      this.canvasRedraw();
+      this.hpCtx.stroke(); 
+    // this.canvasRedraw();
     }
 
     if (ptType === 2) {
@@ -221,8 +223,6 @@ class HigherPlane {
       // $$$ This does not belong here
       this.canvasRedraw();
     }
-
-
   }
 
   canvasRedraw() {
@@ -249,6 +249,11 @@ class HigherPlane {
       }
     }
   }
+
+  clear() {
+    this.stroke = [];
+    this.canvasRedraw();
+  }
 }
 
 // -----------------------------------------------------------------------------------
@@ -265,6 +270,13 @@ document.addEventListener("DOMContentLoaded", function () {
   $("#hpToggle").addEventListener("click", (e) => {
     higherPlane.visible((<HTMLInputElement>e.target).checked);
     higherPlane.resize();
+  });
+  $("#mouseDraw").addEventListener("click", (e) => {
+    higherPlane.drawWithMouse =  (<HTMLInputElement>e.target).checked;
+  });
+
+  $("#clear").addEventListener("click", (e) => {
+    higherPlane.clear();
   });
 
   // make sure that the windows resizes

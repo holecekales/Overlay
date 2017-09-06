@@ -10,15 +10,6 @@
       margin: 0px;
     }
 
-    .unselectable {
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      -khtml-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-
     div:focus {
       outline-style: none;
       -moz-outline-style: none;
@@ -57,7 +48,7 @@
       margin-bottom: 30px;
 
       text-align: justify;
-      overflow-y: scroll;
+      overflow-y: auto;
 
       position: absolute;
       top: 0;
@@ -68,9 +59,21 @@
       background-color: white;
     }
 
-    #hpToggle {
-      margin: 10px;
+    .uiCtrl {
+      position: relative;
+      display: inline-block;
+      margin-left: 10px;
+      margin-top: 7px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12pt;
     }
+
+    input[type=checkbox] {
+      position: relative;
+      vertical-align: middle;
+      bottom: 2px;
+    }
+
   </style>
 
   <script src="script.js"></script>
@@ -79,7 +82,18 @@
 <body>
 
   <div id="host">
-    <input id="hpToggle" type="checkbox">
+    <label class="uiCtrl">
+     <input  id="hpToggle" type="checkbox">
+     Visible
+   </label>
+   <br/>
+   <label class="uiCtrl">
+      <input  id="mouseDraw" type="checkbox">
+      Mouse
+    </label>
+    <br/>
+ 
+    <button id="clear" class="uiCtrl">Clear</button>
     <div id="content"></div>
   </div>
 </body>
