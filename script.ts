@@ -146,6 +146,7 @@ class HigherPlane {
         this.active(false);
         this.forwardPointerEvent(e, this.doc);
         e.preventDefault();
+        e.stopPropagation();
       }
       if (e.type === 'pointerdown') {
         this.addStrokePoint(e, 0);
@@ -164,6 +165,7 @@ class HigherPlane {
         this.forwardPointerEvent(e, this.hpDiv);
         this.active(true);
         e.preventDefault();
+        e.stopPropagation();
       }
       if (e.type === 'pointerup') {
       }
@@ -204,17 +206,15 @@ class HigherPlane {
       this.hpCtx.strokeStyle = '#9131cc';
       this.hpCtx.lineJoin = "round";
       this.hpCtx.lineWidth = 3;
-  
       this.hpCtx.beginPath();
-      let ptY = e.clientY - this.hpDiv.offsetTop;
       this.hpCtx.moveTo(ptX, ptY);
     }
 
     if (ptType === 1) {
       this.hpCtx.lineTo(ptX, ptY);
       // to avoid jagies, i need to redraw the entire canvas
-      this.hpCtx.stroke(); 
-    // this.canvasRedraw();
+      // this.hpCtx.stroke(); 
+       this.canvasRedraw();
     }
 
     if (ptType === 2) {
@@ -283,6 +283,12 @@ document.addEventListener("DOMContentLoaded", function () {
   window.addEventListener("resize", (e) => {
     higherPlane.resize();
   });
+
+  // document.addEventListener('scroll', (e)=> {
+  //   console.log('document scroll');
+  //   higherPlane.handleInputEvent(e);
+  //   e.stopPropagation();
+  // }, true);
 
   // load the text
   loadBook('./SherlockShort.html', '#content');
